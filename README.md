@@ -1,1 +1,3 @@
 # not-arteze-codigo-from-html
+
+Este programa ejecutará las órdenes del usuario. Jamás alcanzable para arteze y toda la wea q ustedes conocen...
