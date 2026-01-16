@@ -103,16 +103,12 @@ para let j = 1; j < 100; j++ {
     async function ejecutar() {
         salida.innerHTML = "";
         let codigo = editor.value;
-
-        // --- MEJORAS DEL PRE-PROCESADOR ---
-        codigo = codigo.replace(/\besperar\b/g, 'await');
-        codigo = codigo.replace(/\bretornar\b/g, 'return'); // Soporte para retornar
         
         // Soporte para bloques si, mientras, para
-        codigo = codigo.replace(/\bsi\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
-        codigo = codigo.replace(/\bsino\s*\{/g, 'else {');
-        codigo = codigo.replace(/\bmientras\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
-        codigo = codigo.replace(/\bpara\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
+        codigo = codigo.replace(/\bif\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
+        codigo = codigo.replace(/\belse\s*\{/g, 'else {');
+        codigo = codigo.replace(/\bwhile\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
+        codigo = codigo.replace(/\bfor\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
 
         // Traducción de escribir simple
         codigo = codigo.split('\n').map(linea => {
