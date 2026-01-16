@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Intérprete Pseudocódigo JS - Alias</title>
+    <style>
+        body { font-family: 'Segoe UI', monospace; background: #1a1a1b; color: #d4d4d4; padding: 20px; }
+        #editor { width: 100%; height: 300px; background: #2d2d2d; color: #9cdcfe; border: 1px solid #3c3c3c; padding: 15px; font-size: 16px; border-radius: 6px; outline: none; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        #consola { background: #000; border: 1px solid #333; padding: 15px; margin-top: 15px; min-height: 120px; border-radius: 4px; white-space: pre-wrap; color: #b5cea8; border-left: 4px solid #0e639c; }
+        button { background: #0e639c; color: white; border: none; padding: 10px 25px; cursor: pointer; border-radius: 4px; margin-bottom: 15px; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #1177bb; }
+        .input-line { display: flex; color: #ce9178; }
+        #user-input { background: transparent; border: none; color: #ce9178; outline: none; font-family: monospace; font-size: 16px; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <h3>Editor de Código (Sintaxis en Español)</h3>
+    <textarea id="editor" spellcheck="false">
+console.log("Calculadora con 'esperar':");
+
+console.log("Dime el primer numero:");
+let a = esperar Leer();
+
+console.log("Dime el segundo numero:");
+let b = esperar Leer();
+
+let resultado = a + b;
+console.log("La suma es: " + resultado);
+
+si resultado > 20 {
+    console.log("Es un numero grande.");
+} sino {
+    console.log("Es un numero pequeño.");
+}
+
+let contador = 1;
+mientras contador <= 3 {
+    console.log("Contando... " + contador);
+    contador++;
+}
+    </textarea>
+    
+    <br>
+    <button onclick="ejecutar()">▶ Ejecutar Programa</button>
+
+    <div id="consola">
+        <div id="salida"></div>
+        <div class="input-line" id="prompt-area" style="display:none">
+            <span>> </span><input type="text" id="user-input" autocomplete="off">
+        </div>
+    </div>
+
+<script>
+    const salida = document.getElementById('salida');
+    const inputArea = document.getElementById('prompt-area');
+    const inputField = document.getElementById('user-input');
+
+    function Leer() {
+        return new Promise(resolve => {
+            inputArea.style.display = "flex";
+            inputField.focus();
+            inputField.onkeydown = (e) => {
+                if (e.key === "Enter") {
+                    let rawVal = inputField.value;
+                    inputField.value = "";
+                    inputArea.style.display = "none";
+                    salida.innerHTML += `<span style="color:gray">${rawVal}</span>\n`;
+                    try {
+                        // Intentamos evaluar si el usuario escribe operaciones
+                        resolve(eval(rawVal));
+                    } catch (err) {
+                        resolve(rawVal);
+                    }
+                }
+            };
+        });
+    }
+
+    const customConsole = {
+        log: (...args) => { salida.innerHTML += args.join(" ") + "\n"; }
+    };
+
+    async function ejecutar() {
+        salida.innerHTML = "";
+        let codigo = document.getElementById('editor').value;
+
+        // --- TRADUCTOR ---
+        
+        // Traducir "esperar" -> "await"
+        codigo = codigo.replace(/\besperar\b/g, 'await');
+
+        // Traducir bloques (si, sino, mientras, para)
+        codigo = codigo.replace(/\bsi\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
+        codigo = codigo.replace(/\bsino\s*\{/g, 'else {');
+        codigo = codigo.replace(/\bmientras\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
+        codigo = codigo.replace(/\bpara\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
+
+        try {
+            const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+            
+            // Inyectamos Leer y el console personalizado
+            // Al declarar Leer como argumento, el código dentro puede usarlo.
+            const programa = new AsyncFunction("Leer", "console", codigo);
+            
+            await programa(Leer, customConsole);
+        } catch (e) {
+            salida.innerHTML += `<span style="color:#f44747; font-weight:bold;">Error: ${e.message}</span>\n`;
+        }
+    }
+</script>
+</body>
+</html>

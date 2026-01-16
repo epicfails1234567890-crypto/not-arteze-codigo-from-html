@@ -2,31 +2,43 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>JS Custom - Eval en Leer</title>
+    <title>Intérprete Pseudocódigo JS</title>
     <style>
-        body { font-family: 'Consolas', monospace; background: #1e1e1e; color: #dcdcdc; padding: 20px; }
-        #editor { width: 100%; height: 250px; background: #252526; color: #9cdcfe; border: 1px solid #333; padding: 15px; font-size: 16px; border-radius: 4px; outline: none; }
-        #consola { background: #000; border: 1px solid #333; padding: 15px; margin-top: 15px; min-height: 120px; border-radius: 4px; white-space: pre-wrap; }
-        button { background: #0e639c; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 2px; margin-bottom: 10px; }
+        body { font-family: 'Segoe UI', monospace; background: #1e1e1e; color: #dcdcdc; padding: 20px; }
+        #editor { width: 100%; height: 300px; background: #252526; color: #9cdcfe; border: 1px solid #333; padding: 15px; font-size: 16px; border-radius: 4px; outline: none; }
+        #consola { background: #000; border: 1px solid #333; padding: 15px; margin-top: 15px; min-height: 120px; border-radius: 4px; white-space: pre-wrap; color: #4ec9b0; }
+        button { background: #2d8a4e; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 2px; margin-bottom: 10px; font-weight: bold; }
         .input-line { display: flex; color: #ce9178; }
         #user-input { background: transparent; border: none; color: #ce9178; outline: none; font-family: monospace; font-size: 16px; width: 100%; }
     </style>
 </head>
 <body>
 
+    <h3>Pseudocódigo en Español (Motor JS)</h3>
     <textarea id="editor" spellcheck="false">
-console.log("Escribe una operacion (ej: 10 * 5 + 2):");
-let dato = await Leer();
+console.log("--- TEST DE CONTROL ---");
+console.log("Introduce un número:");
+let x = await Leer();
 
-console.log("El resultado evaluado es: " + dato);
+si x > 10 {
+    console.log("Es mayor que 10");
+} sino {
+    console.log("Es 10 o menor");
+}
 
-if dato > 50 {
-    console.log("Es un numero grande");
+let i = 1;
+mientras i <= 3 {
+    console.log("Iteración: " + i);
+    i++;
+}
+
+para let j = 0; j < 2; j++ {
+    console.log("Bucle para: " + j);
 }
     </textarea>
     
     <br>
-    <button onclick="ejecutar()">Ejecutar</button>
+    <button onclick="ejecutar()">Ejecutar Programa</button>
 
     <div id="consola">
         <div id="salida"></div>
@@ -40,7 +52,6 @@ if dato > 50 {
     const inputArea = document.getElementById('prompt-area');
     const inputField = document.getElementById('user-input');
 
-    // Función Leer con EVALUACIÓN de expresiones
     function Leer() {
         return new Promise(resolve => {
             inputArea.style.display = "flex";
@@ -51,15 +62,9 @@ if dato > 50 {
                     inputField.value = "";
                     inputArea.style.display = "none";
                     salida.innerHTML += `<span style="color:gray">${rawVal}</span>\n`;
-
                     try {
-                        // Intentamos evaluar lo que el usuario escribió
-                        // Si escribe "5+5", resolverá 10.
-                        // Si escribe "hola", fallará y lo devolverá como string.
-                        let evaluado = eval(rawVal);
-                        resolve(evaluado);
+                        resolve(eval(rawVal));
                     } catch (err) {
-                        // Si no es una expresión válida, lo tratamos como texto
                         resolve(rawVal);
                     }
                 }
@@ -75,14 +80,22 @@ if dato > 50 {
         salida.innerHTML = "";
         let codigo = document.getElementById('editor').value;
 
-        // Pre-procesador de bloques sin paréntesis
-        codigo = codigo.replace(/if\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
-        codigo = codigo.replace(/while\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
-        codigo = codigo.replace(/for\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
+        // --- TRADUCTOR DE PALABRAS CLAVE ---
+        
+        // 1. Traducir "si ... {" -> "if (...) {"
+        codigo = codigo.replace(/\bsi\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
+        
+        // 2. Traducir "sino {" -> "else {"
+        codigo = codigo.replace(/\bsino\s*\{/g, 'else {');
+        
+        // 3. Traducir "mientras ... {" -> "while (...) {"
+        codigo = codigo.replace(/\bmientras\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
+        
+        // 4. Traducir "para ... {" -> "for (...) {"
+        codigo = codigo.replace(/\bpara\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
 
         try {
             const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-            // Inyectamos Leer y console al contexto de la función
             const programa = new AsyncFunction("Leer", "console", codigo);
             await programa(Leer, customConsole);
         } catch (e) {
