@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>PSeInt Web - Lectura de Datos</title>
+    <style>
+        body { font-family: 'Courier New', monospace; background: #121212; color: #00ff41; padding: 20px; }
+        #codigo { width: 100%; height: 200px; background: #222; color: #fff; border: 1px solid #444; padding: 10px; font-size: 16px; margin-bottom: 10px; }
+        #consola { background: #000; border: 1px solid #444; padding: 15px; min-height: 150px; white-space: pre-wrap; line-height: 1.5; }
+        #input-usuario { background: #000; border: none; color: #fff; outline: none; font-family: monospace; font-size: 16px; width: 80%; display: none; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        .prompt { color: #5dade2; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>Intérprete con Leer (Input)</h2>
+    <textarea id="codigo">
+Escribir "Cual es tu nombre?"
+Leer nombre
+Escribir "Hola " + nombre
+
+Escribir "Dime tu edad:"
+Leer edad
+if edad >= 18 {
+    Escribir "Eres mayor de edad"
+}
+if edad < 18 {
+    Escribir "Eres menor de edad"
+}</textarea>
+    
+    <button onclick="iniciarEjecucion()">Ejecutar</button>
+
+    <div id="consola">
+        <div id="salida"></div>
+        <span class="prompt" id="cursor">> </span><input type="text" id="input-usuario">
+    </div>
+
+<script>
+    let variables = {};
+    const salida = document.getElementById('salida');
+    const inputUsuario = document.getElementById('input-usuario');
+    const cursor = document.getElementById('cursor');
+
+    // Función que "pausa" el código hasta que el usuario presione Enter
+    function esperarInput() {
+        return new Promise((resolve) => {
+            inputUsuario.style.display = "inline";
+            inputUsuario.focus();
+            
+            inputUsuario.onkeydown = (e) => {
+                if (e.key === "Enter") {
+                    const valor = inputUsuario.value;
+                    inputUsuario.value = "";
+                    inputUsuario.style.display = "none";
+                    salida.innerHTML += `<span style="color:white">${valor}</span>\n`;
+                    resolve(valor);
+                }
+            };
+        });
+    }
+
+    async function iniciarEjecucion() {
+        const codigo = document.getElementById('codigo').value;
+        salida.innerHTML = "";
+        variables = {};
+        try {
+            await interpretarBloque(codigo);
+        } catch (e) {
+            salida.innerHTML += `<span style="color:red">Error: ${e.message}</span>\n`;
+        }
+    }
+
+    async function interpretarBloque(texto) {
+        let lineas = texto.split(/\n/);
+        let i = 0;
+
+        while (i < lineas.length) {
+            let linea = lineas[i].trim();
+            if (!linea) { i++; continue; }
+
+            // COMANDO: ESCRIBIR
+            if (linea.startsWith("Escribir")) {
+                let exp = linea.replace("Escribir", "").trim();
+                imprimir(evaluarExpresion(exp));
+            }
+            
+            // COMANDO: LEER (AQUÍ ESTÁ EL TRUCO)
+            else if (linea.startsWith("Leer")) {
+                let varName = linea.replace("Leer", "").trim();
+                let valorRecibido = await esperarInput(); // DETIENE EL BUCLE AQUÍ
+                
+                // Intentar convertir a número si es posible
+                variables[varName] = isNaN(valorRecibido) ? valorRecibido : Number(valorRecibido);
+            }
+
+            // COMANDO: IF
+            else if (linea.startsWith("if")) {
+                let condicion = linea.match(/if\s+(.*)\s+\{/)[1];
+                let finBloque = buscarCierreLlave(lineas, i);
+                if (evaluarExpresion(condicion)) {
+                    let subCodigo = lineas.slice(i + 1, finBloque).join("\n");
+                    await interpretarBloque(subCodigo); // Recursión asíncrona
+                }
+                i = finBloque;
+            }
+
+            // ASIGNACIÓN
+            else if (linea.includes("=") && !linea.startsWith("if") && !linea.startsWith("while")) {
+                let [varName, valor] = linea.split("=").map(s => s.trim());
+                variables[varName] = evaluarExpresion(valor);
+            }
+
+            i++;
+        }
+    }
+
+    function buscarCierreLlave(lineas, inicio) {
+        let contador = 0;
+        for (let i = inicio; i < lineas.length; i++) {
+            if (lineas[i].includes("{")) contador++;
+            if (lineas[i].includes("}")) {
+                contador--;
+                if (contador === 0) return i;
+            }
+        }
+        return lineas.length;
+    }
+
+    function evaluarExpresion(exp) {
+        try {
+            let contexto = "";
+            for (let v in variables) {
+                contexto += `let ${v} = ${JSON.stringify(variables[v])}; `;
+            }
+            return eval(contexto + exp);
+        } catch (e) {
+            return exp.replace(/['"]/g, "");
+        }
+    }
+
+    function imprimir(msj) {
+        salida.innerHTML += msj + "\n";
+    }
+</script>
+</body>
+</html>
