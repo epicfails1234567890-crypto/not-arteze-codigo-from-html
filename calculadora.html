@@ -1,0 +1,141 @@
+<meta charset="UTF-8">
+<title>Calculadora de sistemas de ecuaciones.</title>
+<h1>Calculadora de sistemas de ecuaciones.</h1>
+Ecuaciones:
+<br>
+<textarea id="ecuacion"rows="20"cols="100">
+[
+  'v0=dx/dt',
+  'dx=x1-x0',
+  'dt=t1-t0',
+  'x1=-5',
+  'x0=0',
+  't1=1',
+  't0=0'
+]
+</textarea>
+<br>
+<input id="download_file"placeholder="Title here.">
+<input type="button"value="download equation"id="download_eq">
+<br>
+Select a File to Load:
+<br>
+<input type="file" id="fileToLoad" class="custom-file-upload">
+<br>
+<button id="upload_eq">Upload equation.</button>
+<br>
+Solución:
+<br>
+<textarea size="50"id="solucion"rows="9"cols="50"></textarea>
+<br>
+<script src="https://cdn.jsdelivr.net/npm/nerdamer@latest/nerdamer.core.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nerdamer@latest/Algebra.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nerdamer@latest/Calculus.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nerdamer@latest/Solve.js"></script>
+<script type="module">
+// Function to download data to a file
+upload_eq.onclick=()=>{
+	var fileToLoad = document.getElementById("fileToLoad").files[0];
+
+	var fileReader = new FileReader();
+	fileReader.onload = function(fileLoadedEvent){
+	  var textFromFileLoaded = fileLoadedEvent.target.result;
+	  document.getElementById("ecuacion").value = textFromFileLoaded;
+	};
+
+	fileReader.readAsText(fileToLoad, "UTF-8");
+}
+const download=(data, filename, type)=>{
+    var file = new Blob([data], {type: type});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+        var a = document.createElement("a"),
+                url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
+}
+const filterNum = (str) => {
+	const numericalChar = new Set([
+		"a","b","c","d","e","f","g","h","i","j",
+		"k","l","m","n","o","p","q","r","s","t",
+		"u","v","w","x","y","z","\n"," ",
+		"=","'",",","(",")","[","]","/","*","-","+",".",
+		"0","1","2","3","4","5","6","7","8","9"
+	])
+	str = str.split("").filter(char => numericalChar.has(char)).join("");
+	return str;
+}
+const render=()=>{
+    requestAnimationFrame(render)
+    // Resolver un sistema de ecuaciones no lineales
+    try{
+    	ecuacion.value=filterNum(ecuacion.value)
+        solucion.value=nerdamer.solveEquations(eval(ecuacion.value.replace('\n','')))
+    }catch(e){
+        solucion.value=e.message
+    }
+}
+render()
+download_eq.onclick=()=>{
+	download(ecuacion.value,download_file.value,"txt")
+}
+</script>
+<style>
+input[type=file]::file-selector-button {
+	background-color: #888;
+	display:none;
+	transition: 1s;
+}
+
+input[type=file]::file-selector-button:hover {
+	background-color: #888;
+	border: 0px solid #000;
+	transition: 1s;
+}
+
+input, body, textarea, button{
+    font-family:consolas;
+    font-size:15px;
+	transition: 1s;
+}
+input, button{
+    border:0px;
+    background-color:#888;
+	transition: 1s;
+}
+input:hover, button:hover{
+    border:0px;
+    background-color:#bbb;
+	transition: 1s;
+}
+.custom-file-upload {
+    border: 1px solid #ccc;
+    display: inline-block;
+    padding: 6px 12px;
+    cursor: pointer;
+	transition: 1s;
+}
+textarea{
+    border:0px;
+    background-color:#888;
+	transition: 1s;
+}
+textarea:hover{
+    border:0px;
+    background-color:#bbb;
+	transition: 1s;
+}
+textarea:focus, input:focus{
+    outline: none;
+	transition: 1s;
+}
+</style>
+
