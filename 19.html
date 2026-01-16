@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Pseudocode Interpreter Pro</title>
+    <title>Intérprete Pseudocódigo Pro</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e1e; color: #d4d4d4; padding: 20px; line-height: 1.6; }
         h3 { color: #569cd6; border-bottom: 1px solid #333; padding-bottom: 10px; }
@@ -19,68 +19,68 @@
 </head>
 <body>
 
-    <h3>Interpreter with Input Support</h3>
+    <h3>Intérprete con Soporte "Retornar"</h3>
     
     <div class="toolbar">
-        <button onclick="runCode()">▶ Run Code</button>
-        <button class="btn-blue" onclick="downloadCode()">💾 Save .txt</button>
-        <button class="btn-blue" onclick="document.getElementById('file-input').click()">📂 Open .txt</button>
-        <input type="file" id="file-input" style="display:none" accept=".txt" onchange="loadCode(event)">
+        <button onclick="ejecutar()">▶ Ejecutar Código</button>
+        <button class="btn-blue" onclick="descargarCodigo()">💾 Guardar .txt</button>
+        <button class="btn-blue" onclick="document.getElementById('file-input').click()">📂 Abrir .txt</button>
+        <input type="file" id="file-input" style="display:none" accept=".txt" onchange="cargarCodigo(event)">
     </div>
 
     <textarea id="editor" spellcheck="false">
-let isPrime = (n) => {
-    if (n < 2) { return 0 }
+let esprimo = (n) => {
+    si n < 2 { retornar 0 }
     let check = 1
-    for (let i = 2; i < n; i++) {
-        if (n % i == 0) {
+    para let i = 2; i < n; i++ {
+        si n % i == 0 {
             check = 0
         }
     }
-    return check
+    retornar check
 }
 
-write("Calculating primes...")
+escribir "Calculando primos..."
 
-for (let j = 1; j < 100; j++) {
-    // Using await because interpreter is async
-    let result = await isPrime(j)
-    if (result == 1) {
-        write("Prime: " + j)
+para let j = 1; j < 100; j++ {
+    // Usamos esperar porque el intérprete es async
+    let resultado = esperar esprimo(j)
+    si resultado == 1 {
+        escribir "Primo: " + j
     }
 }
     </textarea>
     
     <div id="consola">
-        <div id="output"></div>
+        <div id="salida"></div>
         <div class="input-line" id="prompt-area" style="display:none">
             <span>> </span><input type="text" id="user-input" autocomplete="off">
         </div>
     </div>
 
 <script>
-    const output = document.getElementById('output');
+    const salida = document.getElementById('salida');
     const inputArea = document.getElementById('prompt-area');
     const inputField = document.getElementById('user-input');
     const editor = document.getElementById('editor');
 
-    function downloadCode() {
+    function descargarCodigo() {
         const blob = new Blob([editor.value], { type: 'text/plain' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'prime_code.txt';
-        link.click();
+        const enlace = document.createElement('a');
+        enlace.href = URL.createObjectURL(blob);
+        enlace.download = 'codigo_primos.txt';
+        enlace.click();
     }
 
-    function loadCode(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => { editor.value = e.target.result; };
-        reader.readAsText(file);
+    function cargarCodigo(evento) {
+        const archivo = evento.target.files[0];
+        if (!archivo) return;
+        const lector = new FileReader();
+        lector.onload = (e) => { editor.value = e.target.result; };
+        lector.readAsText(archivo);
     }
 
-    function Read() {
+    function Leer() {
         return new Promise(resolve => {
             inputArea.style.display = "flex";
             inputField.focus();
@@ -89,27 +89,46 @@ for (let j = 1; j < 100; j++) {
                     let val = inputField.value;
                     inputField.value = "";
                     inputArea.style.display = "none";
-                    output.innerHTML += `<span style="color: #858585">// Input: ${val}</span>\n`;
+                    salida.innerHTML += `<span style="color: #858585">// Entrada: ${val}</span>\n`;
                     try { resolve(eval(val)); } catch { resolve(val); }
                 }
             };
         });
     }
 
-    function write(...args) {
-        output.innerHTML += args.join(" ") + "\n";
+    function escribir(...args) {
+        salida.innerHTML += args.join(" ") + "\n";
     }
 
-    async function runCode() {
-        output.innerHTML = "";
-        let code = editor.value;
+    async function ejecutar() {
+        salida.innerHTML = "";
+        let codigo = editor.value;
+
+        // --- MEJORAS DEL PRE-PROCESADOR ---
+        codigo = codigo.replace(/\besperar\b/g, 'await');
+        codigo = codigo.replace(/\bretornar\b/g, 'return'); // Soporte para retornar
+        
+        // Soporte para bloques si, mientras, para
+        codigo = codigo.replace(/\bsi\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
+        codigo = codigo.replace(/\bsino\s*\{/g, 'else {');
+        codigo = codigo.replace(/\bmientras\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
+        codigo = codigo.replace(/\bpara\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
+
+        // Traducción de escribir simple
+        codigo = codigo.split('\n').map(linea => {
+            let t = linea.trim();
+            if (t.startsWith("escribir ") && !t.includes("escribir(")) {
+                return linea.replace("escribir ", "escribir(") + ");";
+            }
+            return linea;
+        }).join('\n');
 
         try {
             const AsyncFunc = Object.getPrototypeOf(async function(){}).constructor;
-            const program = new AsyncFunc("Read", "write", "console", code);
-            await program(Read, write, {log: write});
+            const programa = new AsyncFunc("Leer", "escribir", "console", codigo);
+            await programa(Leer, escribir, {log: escribir});
         } catch (e) {
-            output.innerHTML += `<span class="error">Error: ${e.message}</span>\n`;
+            salida.innerHTML += `<span class="error">Error: ${e.message}</span>\n`;
         }
     }
 </script>
