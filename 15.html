@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Intérprete Pseudocódigo Pro</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e1e; color: #d4d4d4; padding: 20px; line-height: 1.6; }
+        h3 { color: #569cd6; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        #editor { width: 100%; height: 350px; background: #252526; color: #dcdcdc; border: 1px solid #3c3c3c; padding: 15px; font-size: 16px; border-radius: 6px; outline: none; font-family: 'Consolas', 'Courier New', monospace; box-sizing: border-box; }
+        #consola { background: #000; border: 1px solid #333; padding: 15px; margin-top: 15px; min-height: 150px; border-radius: 4px; white-space: pre-wrap; font-family: 'Consolas', monospace; color: #4ec9b0; border-left: 5px solid #2d8a4e; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        
+        /* Nueva barra de herramientas */
+        .toolbar { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+        button { background: #2d8a4e; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 13px; text-transform: uppercase; transition: 0.3s; }
+        button:hover { background: #3aa65e; }
+        .btn-blue { background: #007acc; }
+        .btn-blue:hover { background: #0098ff; }
+
+        .input-line { display: flex; color: #ce9178; margin-top: 5px; }
+        #user-input { background: transparent; border: none; color: #ce9178; outline: none; font-family: 'Consolas', monospace; font-size: 16px; width: 100%; }
+        .error { color: #f44747; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h3>Mi Intérprete Personalizado</h3>
+    
+    <div class="toolbar">
+        <button onclick="ejecutar()">▶ Ejecutar Código</button>
+        <button class="btn-blue" onclick="descargarCodigo()">💾 Guardar .txt</button>
+        <button class="btn-blue" onclick="document.getElementById('file-input').click()">📂 Abrir .txt</button>
+        <input type="file" id="file-input" style="display:none" accept=".txt,.pseudo" onchange="cargarCodigo(event)">
+    </div>
+
+    <textarea id="editor" spellcheck="false">
+escribir "--- INICIO DEL PROGRAMA ---"
+
+escribir "Introduce el valor de A:"
+let a = esperar Leer()
+
+escribir "Introduce el valor de B:"
+let b = esperar Leer()
+
+let suma = a + b
+escribir "La suma de ambos es: " + suma
+
+si suma > 50 {
+    escribir "Resultado alto detectado"
+} sino {
+    escribir "Resultado bajo detectado"
+}
+
+let i = 1
+mientras i <= 3 {
+    escribir "Bucle iteración nro: " + i
+    i++
+}
+    </textarea>
+    
+    <div id="consola">
+        <div id="salida"></div>
+        <div class="input-line" id="prompt-area" style="display:none">
+            <span>> </span><input type="text" id="user-input" autocomplete="off">
+        </div>
+    </div>
+
+<script>
+    const salida = document.getElementById('salida');
+    const inputArea = document.getElementById('prompt-area');
+    const inputField = document.getElementById('user-input');
+    const editor = document.getElementById('editor');
+
+    // --- FUNCIONES DE ARCHIVO ---
+
+    // 1. Descargar el texto del editor como un archivo .txt
+    function descargarCodigo() {
+        const contenido = editor.value;
+        const blob = new Blob([contenido], { type: 'text/plain' });
+        const enlace = document.createElement('a');
+        enlace.href = URL.createObjectURL(blob);
+        enlace.download = 'mi_codigo.txt';
+        enlace.click();
+        URL.revokeObjectURL(enlace.href);
+    }
+
+    // 2. Leer un archivo .txt y ponerlo en el editor
+    function cargarCodigo(evento) {
+        const archivo = evento.target.files[0];
+        if (!archivo) return;
+
+        const lector = new FileReader();
+        lector.onload = function(e) {
+            editor.value = e.target.result;
+            // Limpiar el input para permitir cargar el mismo archivo dos veces si se desea
+            evento.target.value = "";
+        };
+        lector.readAsText(archivo);
+    }
+
+    // --- LÓGICA DEL INTÉRPRETE ---
+
+    function Leer() {
+        return new Promise(resolve => {
+            inputArea.style.display = "flex";
+            inputField.focus();
+            inputField.onkeydown = (e) => {
+                if (e.key === "Enter") {
+                    let rawVal = inputField.value;
+                    inputField.value = "";
+                    inputArea.style.display = "none";
+                    salida.innerHTML += `<span style="color: #858585">// Entrada: ${rawVal}</span>\n`;
+                    try {
+                        resolve(eval(rawVal));
+                    } catch (err) {
+                        resolve(rawVal);
+                    }
+                }
+            };
+        });
+    }
+
+    function escribir(...args) {
+        salida.innerHTML += args.join(" ") + "\n";
+    }
+
+    async function ejecutar() {
+        salida.innerHTML = "";
+        let codigo = editor.value;
+
+        codigo = codigo.replace(/\besperar\b/g, 'await');
+        codigo = codigo.replace(/\bsi\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
+        codigo = codigo.replace(/\bsino\s*\{/g, 'else {');
+        codigo = codigo.replace(/\bmientras\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
+        codigo = codigo.replace(/\bpara\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
+
+        codigo = codigo.split('\n').map(linea => {
+            let trimed = linea.trim();
+            if (trimed.startsWith("escribir ") && !trimed.includes("escribir(")) {
+                return linea.replace("escribir ", "escribir(") + ");";
+            }
+            return linea;
+        }).join('\n');
+
+        try {
+            const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+            const programa = new AsyncFunction("Leer", "escribir", "console", codigo);
+            await programa(Leer, escribir, {log: escribir});
+        } catch (e) {
+            salida.innerHTML += `<span class="error">Error de ejecución: ${e.message}</span>\n`;
+        }
+    }
+</script>
+</body>
+</html>

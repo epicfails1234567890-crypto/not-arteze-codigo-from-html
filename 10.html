@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Intérprete Pseudocódigo Pro</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e1e; color: #d4d4d4; padding: 20px; line-height: 1.6; }
+        h3 { color: #569cd6; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        #editor { width: 100%; height: 350px; background: #252526; color: #dcdcdc; border: 1px solid #3c3c3c; padding: 15px; font-size: 16px; border-radius: 6px; outline: none; font-family: 'Consolas', 'Courier New', monospace; }
+        #consola { background: #000; border: 1px solid #333; padding: 15px; margin-top: 15px; min-height: 150px; border-radius: 4px; white-space: pre-wrap; font-family: 'Consolas', monospace; color: #4ec9b0; border-left: 5px solid #2d8a4e; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        button { background: #2d8a4e; color: white; border: none; padding: 12px 30px; cursor: pointer; border-radius: 4px; margin-bottom: 15px; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+        button:hover { background: #3aa65e; }
+        .input-line { display: flex; color: #ce9178; margin-top: 5px; }
+        #user-input { background: transparent; border: none; color: #ce9178; outline: none; font-family: 'Consolas', monospace; font-size: 16px; width: 100%; }
+        .error { color: #f44747; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h3>Mi Intérprete Personalizado</h3>
+    <textarea id="editor" spellcheck="false">
+escribir "--- INICIO DEL PROGRAMA ---"
+
+escribir "Introduce el valor de A:"
+let a = esperar Leer()
+
+escribir "Introduce el valor de B:"
+let b = esperar Leer()
+
+let suma = a + b
+escribir "La suma de ambos es: " + suma
+
+si suma > 50 {
+    escribir "Resultado alto detectado"
+} sino {
+    escribir "Resultado bajo detectado"
+}
+
+let i = 1
+mientras i <= 3 {
+    escribir "Bucle iteración nro: " + i
+    i++
+}
+    </textarea>
+    
+    <br>
+    <button onclick="ejecutar()">▶ Ejecutar Código</button>
+
+    <div id="consola">
+        <div id="salida"></div>
+        <div class="input-line" id="prompt-area" style="display:none">
+            <span>> </span><input type="text" id="user-input" autocomplete="off">
+        </div>
+    </div>
+
+<script>
+    const salida = document.getElementById('salida');
+    const inputArea = document.getElementById('prompt-area');
+    const inputField = document.getElementById('user-input');
+
+    // Función Leer que evalúa lo que el usuario teclea
+    function Leer() {
+        return new Promise(resolve => {
+            inputArea.style.display = "flex";
+            inputField.focus();
+            inputField.onkeydown = (e) => {
+                if (e.key === "Enter") {
+                    let rawVal = inputField.value;
+                    inputField.value = "";
+                    inputArea.style.display = "none";
+                    salida.innerHTML += `<span style="color: #858585">// Entrada: ${rawVal}</span>\n`;
+                    try {
+                        // Resuelve operaciones matemáticas o comparaciones tecleadas
+                        resolve(eval(rawVal));
+                    } catch (err) {
+                        resolve(rawVal);
+                    }
+                }
+            };
+        });
+    }
+
+    // Función Escribir (reemplaza a console.log)
+    function escribir(...args) {
+        salida.innerHTML += args.join(" ") + "\n";
+    }
+
+    async function ejecutar() {
+        salida.innerHTML = "";
+        let codigo = document.getElementById('editor').value;
+
+        // --- PRE-PROCESADOR DE SINTAXIS ---
+        
+        // 1. Traducir "esperar" -> "await"
+        codigo = codigo.replace(/\besperar\b/g, 'await');
+
+        // 2. Traducir bloques sin paréntesis (si, mientras, para)
+        codigo = codigo.replace(/\bsi\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
+        codigo = codigo.replace(/\bsino\s*\{/g, 'else {');
+        codigo = codigo.replace(/\bmientras\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
+        codigo = codigo.replace(/\bpara\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
+
+        // 3. Traducir "escribir mensaje" -> "escribir(mensaje)"
+        // Buscamos líneas que empiecen con escribir y no tengan paréntesis
+        codigo = codigo.split('\n').map(linea => {
+            let trimed = linea.trim();
+            if (trimed.startsWith("escribir ") && !trimed.includes("escribir(")) {
+                return linea.replace("escribir ", "escribir(") + ");";
+            }
+            return linea;
+        }).join('\n');
+
+        try {
+            const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+            
+            // Inyectamos las funciones Leer y escribir para que estén disponibles
+            const programa = new AsyncFunction("Leer", "escribir", "console", codigo);
+            
+            // También pasamos console para que no dé error si lo usan
+            await programa(Leer, escribir, {log: escribir});
+        } catch (e) {
+            salida.innerHTML += `<span class="error">Error de ejecución: ${e.message}</span>\n`;
+        }
+    }
+</script>
+</body>
+</html>
