@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pseudocode Interpreter Pro</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e1e; color: #d4d4d4; padding: 20px; line-height: 1.6; }
+        h3 { color: #569cd6; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        #editor { width: 100%; height: 350px; background: #252526; color: #dcdcdc; border: 1px solid #3c3c3c; padding: 15px; font-size: 16px; border-radius: 6px; outline: none; font-family: 'Consolas', 'Courier New', monospace; box-sizing: border-box; }
+        #consola { background: #000; border: 1px solid #333; padding: 15px; margin-top: 15px; min-height: 150px; border-radius: 4px; white-space: pre-wrap; font-family: 'Consolas', monospace; color: #4ec9b0; border-left: 5px solid #2d8a4e; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .toolbar { margin-bottom: 15px; display: flex; gap: 10px; }
+        button { background: #2d8a4e; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 13px; text-transform: uppercase; }
+        button:hover { background: #3aa65e; }
+        .btn-blue { background: #007acc; }
+        .input-line { display: flex; color: #ce9178; margin-top: 5px; }
+        #user-input { background: transparent; border: none; color: #ce9178; outline: none; font-family: 'Consolas', monospace; font-size: 16px; width: 100%; }
+        .error { color: #f44747; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h3>Interpreter with Input Support</h3>
+    
+    <div class="toolbar">
+        <button onclick="runCode()">▶ Run Code</button>
+        <button class="btn-blue" onclick="downloadCode()">💾 Save .txt</button>
+        <button class="btn-blue" onclick="document.getElementById('file-input').click()">📂 Open .txt</button>
+        <input type="file" id="file-input" style="display:none" accept=".txt" onchange="loadCode(event)">
+    </div>
+
+    <textarea id="editor" spellcheck="false">
+let isPrime = (n) => {
+    if (n < 2) { return 0 }
+    let check = 1
+    for (let i = 2; i < n; i++) {
+        if (n % i == 0) {
+            check = 0
+        }
+    }
+    return check
+}
+
+write("Calculating primes...")
+
+for (let j = 1; j < 100; j++) {
+    // Using await because interpreter is async
+    let result = await isPrime(j)
+    if (result == 1) {
+        write("Prime: " + j)
+    }
+}
+    </textarea>
+    
+    <div id="consola">
+        <div id="output"></div>
+        <div class="input-line" id="prompt-area" style="display:none">
+            <span>> </span><input type="text" id="user-input" autocomplete="off">
+        </div>
+    </div>
+
+<script>
+    const output = document.getElementById('output');
+    const inputArea = document.getElementById('prompt-area');
+    const inputField = document.getElementById('user-input');
+    const editor = document.getElementById('editor');
+
+    function downloadCode() {
+        const blob = new Blob([editor.value], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'prime_code.txt';
+        link.click();
+    }
+
+    function loadCode(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => { editor.value = e.target.result; };
+        reader.readAsText(file);
+    }
+
+    function Read() {
+        return new Promise(resolve => {
+            inputArea.style.display = "flex";
+            inputField.focus();
+            inputField.onkeydown = (e) => {
+                if (e.key === "Enter") {
+                    let val = inputField.value;
+                    inputField.value = "";
+                    inputArea.style.display = "none";
+                    output.innerHTML += `<span style="color: #858585">// Input: ${val}</span>\n`;
+                    try { resolve(eval(val)); } catch { resolve(val); }
+                }
+            };
+        });
+    }
+
+    function write(...args) {
+        output.innerHTML += args.join(" ") + "\n";
+    }
+
+    async function runCode() {
+        output.innerHTML = "";
+        let code = editor.value;
+
+        try {
+            const AsyncFunc = Object.getPrototypeOf(async function(){}).constructor;
+            const program = new AsyncFunc("Read", "write", "console", code);
+            await program(Read, write, {log: write});
+        } catch (e) {
+            output.innerHTML += `<span class="error">Error: ${e.message}</span>\n`;
+        }
+    }
+</script>
+</body>
+</html>
