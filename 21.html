@@ -83,12 +83,34 @@ for let j = 1; j < 100; j++ {
         }
     });
 
-    function descargarCodigo() {
-        const blob = new Blob([editor.value], { type: 'text/plain' });
-        const enlace = document.createElement('a');
-        enlace.href = URL.createObjectURL(blob);
-        enlace.download = 'codigo_primos.txt';
-        enlace.click();
+    async function descargarCodigo() {
+        try {
+            // Abre el selector de archivos nativo
+            const handle = await window.showSaveFilePicker({
+                suggestedName: 'codigo.txt',
+                types: [{
+                    description: 'Archivo de texto',
+                    accept: { 'text/plain': ['.txt'] },
+                }],
+            });
+    
+            // Crea un flujo de escritura
+            const writable = await handle.createWritable();
+            
+            // Escribe el contenido del editor
+            await writable.write(editor.value);
+            
+            // Cierra el archivo y guarda los cambios
+            await writable.close();
+            
+        } catch (err) {
+            // El usuario canceló o el navegador no es compatible
+            if (err.name !== 'AbortError') {
+                console.error(err);
+                // Si falla, usamos el método tradicional como respaldo
+                descargarMetodoTradicional();
+            }
+        }
     }
 
     function cargarCodigo(evento) {
