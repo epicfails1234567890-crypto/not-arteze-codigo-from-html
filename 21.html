@@ -16,12 +16,10 @@
         #user-input { background: transparent; border: none; color: #ce9178; outline: none; font-family: 'Consolas', monospace; font-size: 16px; width: 100%; }
         .error { color: #f44747; font-weight: bold; }
     </style>
-    <link rel="icon" type="image/x-icon" href="js++.png">
 </head>
 <body>
 
-    <h3>Javascript++</h3>
-    <img src="js++.png"width="64"></img>
+    <h3>Javascript++ (Write Edition)</h3>
     
     <div class="toolbar">
         <button onclick="ejecutar()">▶ Ejecutar Código</button>
@@ -42,14 +40,13 @@ esprimo = (n) => {
     return check
 }
 
-    
-escribir "Calculando primos..."
+write "Calculando números primos..."
 
-for let j = 1; j < 100; j++ {
-    // Usamos esperar porque el intérprete es async
+for let j = 1; j < 50; j++ {
+    // Usamos await porque el intérprete es async
     let resultado = await esprimo(j)
     if resultado == 1 {
-        escribir "Primo: " + j
+        write "Primo encontrado: " + j
     }
 }
     </textarea>
@@ -67,27 +64,25 @@ for let j = 1; j < 100; j++ {
     const inputField = document.getElementById('user-input');
     const editor = document.getElementById('editor');
 
-    // --- Soporte para tecla Tab en el editor ---
+    // --- Soporte para tecla Tab ---
     editor.addEventListener("keydown", function(e) {
         if (e.key === "Tab") {
-            e.preventDefault(); // evita que el foco cambie
+            e.preventDefault();
             const start = this.selectionStart;
             const end = this.selectionEnd;
-
-            // Inserta un tab (puedes usar "\t" o espacios)
-            const tab = "    "; // 4 espacios, si prefieres "\t" cámbialo
+            const tab = "    "; 
             this.value = this.value.substring(0, start) + tab + this.value.substring(end);
-
-            // Mueve el cursor después del tab
             this.selectionStart = this.selectionEnd = start + tab.length;
         }
     });
 
     function descargarCodigo() {
+        const nombre = prompt('Nombre del archivo:', 'codigo.txt');
+        if (!nombre) return;
         const blob = new Blob([editor.value], { type: 'text/plain' });
         const enlace = document.createElement('a');
         enlace.href = URL.createObjectURL(blob);
-        enlace.download = prompt('Enter the name of your file');
+        enlace.download = nombre.endsWith('.txt') ? nombre : nombre + '.txt';
         enlace.click();
     }
 
@@ -115,7 +110,8 @@ for let j = 1; j < 100; j++ {
         });
     }
 
-    function escribir(...args) {
+    // Definición de la función write
+    function write(...args) {
         salida.innerHTML += args.join(" ") + "\n";
     }
 
@@ -123,25 +119,29 @@ for let j = 1; j < 100; j++ {
         salida.innerHTML = "";
         let codigo = editor.value;
         
-        // Soporte para bloques si, mientras, para
+        // 1. Transformar estructuras de control (if, while, for sin paréntesis)
         codigo = codigo.replace(/\bif\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
         codigo = codigo.replace(/\belse\s*\{/g, 'else {');
         codigo = codigo.replace(/\bwhile\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
         codigo = codigo.replace(/\bfor\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
 
-        // Traducción de escribir simple
+        // 2. Traducción de 'write' (de estilo comando a estilo función)
         codigo = codigo.split('\n').map(linea => {
             let t = linea.trim();
-            if (t.startsWith("escribir ") && !t.includes("escribir(")) {
-                return linea.replace("escribir ", "escribir(") + ");";
+            // Si la línea empieza con write y un espacio, y no tiene ya paréntesis
+            if (t.startsWith("write ") && !t.includes("write(")) {
+                return linea.replace("write ", "write(") + ");";
             }
             return linea;
         }).join('\n');
 
         try {
+            // Crear la función asíncrona inyectando Leer y write
             const AsyncFunc = Object.getPrototypeOf(async function(){}).constructor;
-            const programa = new AsyncFunc("Leer", "escribir", "console", codigo);
-            await programa(Leer, escribir, {log: escribir});
+            const programa = new AsyncFunc("Leer", "write", "console", codigo);
+            
+            // Ejecutar pasando las referencias reales de las funciones
+            await programa(Leer, write, {log: write});
         } catch (e) {
             salida.innerHTML += `<span class="error">Error: ${e.message}</span>\n`;
         }
