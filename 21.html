@@ -87,7 +87,7 @@ for let j = 1; j < 100; j++ {
         const blob = new Blob([editor.value], { type: 'text/plain' });
         const enlace = document.createElement('a');
         enlace.href = URL.createObjectURL(blob);
-        enlace.download = 'codigo_primos.txt';
+        enlace.download = prompt('Enter the name of your file');
         enlace.click();
     }
 
