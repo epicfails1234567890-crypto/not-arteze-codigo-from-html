@@ -1,21 +1,48 @@
-<div id="f1"style="max-width:100%">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Eliminamos la necesidad de JavaScript para el tamaño */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Evita scrolls innecesarios */
+            background-color: black;
+        }
+        #f1 {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="f1">
         <div id="game"></div>
-      </div>
-<script type="text/javascript">
-    EJS_player = '#game';
-    EJS_gameUrl = './rom2.sfc'; // Url to Game rom
-    EJS_gameID = 1; // ID in your website, required for netplay.
-    EJS_core = 'snes';
-</script>
-<script src="https://www.emulatorjs.com/loader.js"></script>
-<script>
-render=()=>{
-    requestAnimationFrame(render)
-    f1.style.width=innerWidth
-    f1.style.height=innerHeight
-}
-onload=()=>{
-    document.body.style.margin=0
-    render()
-}
-</script>
+    </div>
+
+    <script type="text/javascript">
+        // Configuración de EmulatorJS
+        EJS_player = '#game';
+        EJS_gameUrl = './rom2.sfc'; 
+        EJS_gameID = 1; 
+        EJS_core = 'snes';
+    </script>
+    
+    <script src="https://www.emulatorjs.com/loader.js"></script>
+
+    <script>
+        // Si necesitas que el emulador se adapte dinámicamente, 
+        // es mejor usar el evento resize que un requestAnimationFrame.
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('f1');
+            container.style.width = window.innerWidth + 'px';
+            container.style.height = window.innerHeight + 'px';
+        });
+    </script>
+</body>
+</html>
