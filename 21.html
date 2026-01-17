@@ -19,7 +19,7 @@
 </head>
 <body>
 
-    <h3>Javascript++ (Write Edition)</h3>
+    <h3>Javascript++ (Read Edition)</h3>
     
     <div class="toolbar">
         <button onclick="ejecutar()">▶ Ejecutar Código</button>
@@ -29,14 +29,17 @@
     </div>
 
     <textarea id="editor" spellcheck="false">
-write "¿Cómo te llamas?"
+write "Introduce tu nombre:"
 let nombre = await Read()
-write "Hola, " + nombre
+write "Hola, " + nombre + "!"
 
-write "Calculando si un número es primo..."
-let n = 7
-if n % 2 != 0 {
-    write n + " podría ser primo"
+write "¿Cuántos años tienes?"
+let edad = await Read()
+
+if edad >= 18 {
+    write "Eres mayor de edad"
+} else {
+    write "Eres menor de edad"
 }
     </textarea>
     
@@ -53,7 +56,6 @@ if n % 2 != 0 {
     const inputField = document.getElementById('user-input');
     const editor = document.getElementById('editor');
 
-    // --- Soporte para tecla Tab ---
     editor.addEventListener("keydown", function(e) {
         if (e.key === "Tab") {
             e.preventDefault();
@@ -83,23 +85,23 @@ if n % 2 != 0 {
         lector.readAsText(archivo);
     }
 
-    // --- Cambio de Leer() a Read() ---
+    // --- FUNCIÓN READ ---
     function Read() {
         return new Promise(resolve => {
             inputArea.style.display = "flex";
+            inputField.value = "";
             inputField.focus();
             inputField.onkeydown = (e) => {
                 if (e.key === "Enter") {
                     let val = inputField.value;
-                    inputField.value = "";
                     inputArea.style.display = "none";
                     salida.innerHTML += `<span style="color: #858585">// Entrada: ${val}</span>\n`;
-                    // Intentamos evaluar si es un número o booleano, si no, devolvemos string
-                    try { 
-                        if(val.trim() === "") resolve("");
-                        else resolve(eval(val)); 
-                    } catch { 
-                        resolve(val); 
+                    
+                    // Si es un número, lo convierte; si no, lo deja como texto
+                    if (!isNaN(val) && val.trim() !== "") {
+                        resolve(Number(val));
+                    } else {
+                        resolve(val);
                     }
                 }
             };
@@ -114,13 +116,13 @@ if n % 2 != 0 {
         salida.innerHTML = "";
         let codigo = editor.value;
         
-        // 1. Transformar estructuras de control (if, while, for sin paréntesis)
+        // Transformar estructuras (if, while, for sin paréntesis)
         codigo = codigo.replace(/\bif\s+(?![\(])(.+?)\s*\{/g, 'if ($1) {');
         codigo = codigo.replace(/\belse\s*\{/g, 'else {');
         codigo = codigo.replace(/\bwhile\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
         codigo = codigo.replace(/\bfor\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
 
-        // 2. Traducción de 'write'
+        // Traducción de 'write'
         codigo = codigo.split('\n').map(linea => {
             let t = linea.trim();
             if (t.startsWith("write ") && !t.includes("write(")) {
@@ -130,10 +132,11 @@ if n % 2 != 0 {
         }).join('\n');
 
         try {
-            // Se inyecta "Read" en lugar de "Leer"
+            // Se define la función asíncrona inyectando Read y write explícitamente
             const AsyncFunc = Object.getPrototypeOf(async function(){}).constructor;
             const programa = new AsyncFunc("Read", "write", "console", codigo);
             
+            // Se pasan las funciones reales como argumentos
             await programa(Read, write, {log: write});
         } catch (e) {
             salida.innerHTML += `<span class="error">Error: ${e.message}</span>\n`;
