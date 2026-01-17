@@ -29,25 +29,14 @@
     </div>
 
     <textarea id="editor" spellcheck="false">
-esprimo = (n) => {
-    if n < 2 { return 0 }
-    check = 1
-    for let i = 2; i < n; i++ {
-        if n % i == 0 {
-            check = 0
-        }
-    }
-    return check
-}
+write "¿Cómo te llamas?"
+let nombre = await Read()
+write "Hola, " + nombre
 
-write "Calculando números primos..."
-
-for let j = 1; j < 50; j++ {
-    // Usamos await porque el intérprete es async
-    let resultado = await esprimo(j)
-    if resultado == 1 {
-        write "Primo encontrado: " + j
-    }
+write "Calculando si un número es primo..."
+let n = 7
+if n % 2 != 0 {
+    write n + " podría ser primo"
 }
     </textarea>
     
@@ -94,7 +83,8 @@ for let j = 1; j < 50; j++ {
         lector.readAsText(archivo);
     }
 
-    function Leer() {
+    // --- Cambio de Leer() a Read() ---
+    function Read() {
         return new Promise(resolve => {
             inputArea.style.display = "flex";
             inputField.focus();
@@ -104,13 +94,18 @@ for let j = 1; j < 50; j++ {
                     inputField.value = "";
                     inputArea.style.display = "none";
                     salida.innerHTML += `<span style="color: #858585">// Entrada: ${val}</span>\n`;
-                    try { resolve(eval(val)); } catch { resolve(val); }
+                    // Intentamos evaluar si es un número o booleano, si no, devolvemos string
+                    try { 
+                        if(val.trim() === "") resolve("");
+                        else resolve(eval(val)); 
+                    } catch { 
+                        resolve(val); 
+                    }
                 }
             };
         });
     }
 
-    // Definición de la función write
     function write(...args) {
         salida.innerHTML += args.join(" ") + "\n";
     }
@@ -125,10 +120,9 @@ for let j = 1; j < 50; j++ {
         codigo = codigo.replace(/\bwhile\s+(?![\(])(.+?)\s*\{/g, 'while ($1) {');
         codigo = codigo.replace(/\bfor\s+(?![\(])(.+?)\s*\{/g, 'for ($1) {');
 
-        // 2. Traducción de 'write' (de estilo comando a estilo función)
+        // 2. Traducción de 'write'
         codigo = codigo.split('\n').map(linea => {
             let t = linea.trim();
-            // Si la línea empieza con write y un espacio, y no tiene ya paréntesis
             if (t.startsWith("write ") && !t.includes("write(")) {
                 return linea.replace("write ", "write(") + ");";
             }
@@ -136,12 +130,11 @@ for let j = 1; j < 50; j++ {
         }).join('\n');
 
         try {
-            // Crear la función asíncrona inyectando Leer y write
+            // Se inyecta "Read" en lugar de "Leer"
             const AsyncFunc = Object.getPrototypeOf(async function(){}).constructor;
-            const programa = new AsyncFunc("Leer", "write", "console", codigo);
+            const programa = new AsyncFunc("Read", "write", "console", codigo);
             
-            // Ejecutar pasando las referencias reales de las funciones
-            await programa(Leer, write, {log: write});
+            await programa(Read, write, {log: write});
         } catch (e) {
             salida.innerHTML += `<span class="error">Error: ${e.message}</span>\n`;
         }
