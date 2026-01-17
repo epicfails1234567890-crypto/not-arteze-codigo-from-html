@@ -75,6 +75,16 @@ if edad >= 18 {
     log=(n)=>{
         return Math.log10(n)
     }
+    min=(a,b)=>{
+        return Math.min(a,b)
+    }
+    max=(a,b)=>{
+        return Math.max(a,b)
+    }
+    clamp=(max,n,min)=>{
+        n=min(max,n)
+        return max(min,n)
+    }
     
     const salida = document.getElementById('salida');
     const inputArea = document.getElementById('prompt-area');
