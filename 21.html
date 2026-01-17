@@ -83,37 +83,37 @@ for let j = 1; j < 100; j++ {
         }
     });
 
-async function descargarCodigo() {
-    try {
-        // 1. Abrir el selector de archivos (esto permite elegir ubicación y nombre)
-        const handle = await window.showSaveFilePicker({
-            suggestedName: 'mi_codigo.txt',
-            types: [{
-                description: 'Archivos de texto (.txt)',
-                accept: { 'text/plain': ['.txt'] },
-            }],
-        });
-
-        // 2. Crear el FileWriter (WritableStream)
-        const escritor = await handle.createWritable();
-
-        // 3. Escribir el contenido del editor directamente al archivo
-        await escritor.write(editor.value);
-
-        // 4. Cerrar el archivo para asegurar que se guarden los cambios
-        await escritor.close();
-
-        console.log("Archivo guardado exitosamente");
-    } catch (error) {
-        // Manejar si el usuario cancela la ventana de guardado
-        if (error.name === 'AbortError') {
-            console.log("El usuario canceló el guardado");
-        } else {
-            alert("Tu navegador no soporta la escritura directa de archivos. Intenta usar Chrome o Edge.");
-            console.error(error);
+    async function descargarCodigo() {
+        try {
+            // 1. Abrir el selector de archivos (esto permite elegir ubicación y nombre)
+            const handle = await window.showSaveFilePicker({
+                suggestedName: 'mi_codigo.txt',
+                types: [{
+                    description: 'Archivos de texto (.txt)',
+                    accept: { 'text/plain': ['.txt'] },
+                }],
+            });
+    
+            // 2. Crear el FileWriter (WritableStream)
+            const escritor = await handle.createWritable();
+    
+            // 3. Escribir el contenido del editor directamente al archivo
+            await escritor.write(editor.value);
+    
+            // 4. Cerrar el archivo para asegurar que se guarden los cambios
+            await escritor.close();
+    
+            console.log("Archivo guardado exitosamente");
+        } catch (error) {
+            // Manejar si el usuario cancela la ventana de guardado
+            if (error.name === 'AbortError') {
+                console.log("El usuario canceló el guardado");
+            } else {
+                alert("Tu navegador no soporta la escritura directa de archivos. Intenta usar Chrome o Edge.");
+                console.error(error);
+            }
         }
     }
-}
 
     function cargarCodigo(evento) {
         const archivo = evento.target.files[0];
