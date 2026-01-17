@@ -82,8 +82,8 @@ if edad >= 18 {
         return Math.max(a,b)
     }
     clamp=(max,n,min)=>{
-        n=min(max,n)
-        return max(min,n)
+        n=Math.min(max,n)
+        return Math.max(min,n)
     }
     
     const salida = document.getElementById('salida');
