@@ -1,0 +1,21 @@
+<div id="f1"style="max-width:100%">
+        <div id="game"></div>
+      </div>
+<script type="text/javascript">
+    EJS_player = '#game';
+    EJS_gameUrl = './Super Mario All-Stars + Super Mario World (USA).sfc'; // Url to Game rom
+    EJS_gameID = 6; // ID in your website, required for netplay.
+    EJS_core = 'snes';
+</script>
+<script src="https://www.emulatorjs.com/loader.js"></script>
+<script>
+render=()=>{
+    requestAnimationFrame(render)
+    f1.style.width=innerWidth
+    f1.style.height=innerHeight
+}
+onload=()=>{
+    document.body.style.margin=0
+    render()
+}
+</script>
